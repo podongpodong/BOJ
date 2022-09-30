@@ -19,6 +19,7 @@ typedef struct _node{
     int data;
     struct _node *left;
     struct _node *right;
+    int haveParent;
 }Tnode;
 
 Tnode* SetNode(int data);
@@ -28,36 +29,75 @@ Tnode* Search(Tnode *bt, int target);
 void Traversal(Tnode *bt, int target); //중위 순회
 
 int main()
-{
-    Tnode *Root = SetNode(1);
+{ 
 
     int cnt;
     scanf("%d", &cnt);
+
+    Tnode **nodeArray;
+    nodeArray = (Tnode**)malloc(sizeof(Tnode*) * cnt);
+    for(int i = 1; i<=cnt; i++)
+    {
+        nodeArray[i-1] = SetNode(i);
+    }
+
+    Tnode *Root = nodeArray[0];
+
     for(int i = 0; i<cnt-1; i++)
     {
         int num1, num2;
         scanf("%d %d", &num1, &num2);
 
-        Tnode *snode1 = Search(Root, num1);
-        Tnode *snode2 = Search(Root, num2);
+        Tnode *searchNode1 = Search(Root, num1);
+        Tnode *searchNode2 = Search(Root, num2);
 
-        if(snode1 != NULL)
+        if(searchNode1 != NULL)
         {
-            Tnode *input = SetNode(num2);
-            LinkedTree(snode1, input);
+            if(nodeArray[num2-1]->haveParent == 1)
+            {
+                for(int i = 0; i<cnt; i++)
+                {
+                    if(nodeArray[i]->left == nodeArray[num2-1])
+                    {
+                        nodeArray[i]->left = NULL;
+                        nodeArray[num2-1]->haveParent = 0;
+                        LinkedTree(nodeArray[num2-1], nodeArray[i]);
+                        break;
+                    }
+                }
+            }
+            LinkedTree(searchNode1, nodeArray[num2-1]);
         }
-        else if(snode2 != NULL)
+        else if(searchNode2 != NULL)
         {
-            Tnode *input = SetNode(num1);
-            LinkedTree(snode2, input);
+            if(nodeArray[num1-1]->haveParent == 1)
+            {
+                for(int i = 0; i<cnt; i++)
+                {
+                    if(nodeArray[i]->left == nodeArray[num1-1])
+                    {
+                        nodeArray[i]->left = NULL;
+                        nodeArray[num1-1]->haveParent = 0;
+                        LinkedTree(nodeArray[num1-1], nodeArray[i]);
+                        break;
+                    }
+                }
+            }
+            LinkedTree(searchNode2, nodeArray[num1-1]);
         }
+        else if(searchNode1 == NULL && searchNode2 == NULL)
+        {
+            LinkedTree(nodeArray[num1-1], nodeArray[num2-1]);
+        }
+
     }
+
+
     for(int i = 2; i<=cnt; i++)
     {
         Traversal(Root, i);
     }
     
-
     return 0;
 
 }
@@ -68,7 +108,7 @@ Tnode* SetNode(int data)
     nd->data = data;
     nd->left = NULL;
     nd->right = NULL;
-
+    nd->haveParent = 0;
     return nd;
 }
 
@@ -77,10 +117,12 @@ void LinkedTree(Tnode *parent, Tnode *child)
     if(parent->left == NULL)
     {
         parent->left = child;
+        child->haveParent = 1;
     }
     else if(parent->right == NULL)
     {
         parent->right = child;
+        child->haveParent = 1;
     }
 }
 
@@ -106,17 +148,29 @@ void Traversal(Tnode *bt,  int target)//중위 순회
 
     if(bt->left == NULL) 
     {
-        if(bt->right->data == target) printf("%d\n", bt->data);
+        if(bt->right->data == target) 
+        {
+            printf("%d\n", bt->data);
+            return;
+        }
         Traversal(bt->right, target);
     }
     else if(bt->right == NULL)
     { 
-        if(bt->left->data == target) printf("%d\n", bt->data);
+        if(bt->left->data == target)        
+        {
+            printf("%d\n", bt->data);
+            return;
+        }
         Traversal(bt->left, target);
     }
     else
     {
-        if(bt->left->data == target || bt->right->data == target) printf("%d\n", bt->data);
+        if(bt->left->data == target || bt->right->data == target) 
+        {
+            printf("%d\n", bt->data);
+            return;
+        }
         Traversal(bt->right, target);
         Traversal(bt->left, target);
     }
