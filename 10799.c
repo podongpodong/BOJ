@@ -18,7 +18,7 @@ typedef struct _stack{
 void Init(Stack *stack);
 void Push(Stack *stack, char data, int idx);
 char Peek(Stack *stack);
-void Pop(Stack *stack);
+int Pop(Stack *stack);
 
 int main()
 {
@@ -29,32 +29,26 @@ int main()
     scanf("%s", str);
 
     int idx = 0;
-    int stick = 0, razer = 0;
+    int stick = 0;
+    int result = 0;
     for(int i = 0; i<strlen(str); i++)
     {
         if(str[i] == '(')
         {
             Push(&stack, str[i], idx);
-            idx++;
+        }
+        else if(Peek(&stack) == idx - 1)
+        {
+            int trash = Pop(&stack);
         }
         else
         {
-            if(Peek(&stack) == idx-1)
-            {
-                Push(&stack, str[i], idx);
-                idx++;
-                razer += 1;
-            }
-            else
-            {
-                Push(&stack, str[i], idx);
-                idx++;
-                stick += 1;
-            }
+            int temp = Pop(&stack);
+            printf("stick : %d\n", (idx-temp-1)/2);
         }
+        idx++;
     }
-    printf("%d, %d", razer, stick);
-
+    printf("%d \n", stick);
     return 0;
 }
 
@@ -63,12 +57,14 @@ void Init(Stack *stack)
     stack->head = NULL;
 }
 
-void Pop(Stack *stack)
+int Pop(Stack *stack)
 {
     Node *rnode = stack->head;
+    int ridx = stack->head->idx;
 
     stack->head = stack->head->next;
     free(rnode);
+    return ridx;
 }
 
 char Peek(Stack *stack)
@@ -80,8 +76,8 @@ void Push(Stack *stack, char data, int idx)
 {
     Node *newnode = (Node*)malloc(sizeof(Node));
     newnode->data = data;
+    newnode->idx = idx;
 
     newnode->next = stack->head;
     stack->head = newnode;
 }
-
