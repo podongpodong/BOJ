@@ -2,111 +2,108 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define BUCKET_SIZE 26
-#define Len 500000
+#define BUCKET_SIZE 500000
 #define TRUE 1
 #define FALSE 0
-
 typedef struct _node{
-    int key; //학번
-    char value[20]; //이름
+    char value[25];
     struct _node *next;
 }Node;
 
 typedef struct _bucket{
-    int numOfdata; // 같은 색인의 데이터가 몇개 있는지 확인하는 용도
-    Node *head;// 충돌이 일어나는 데이터를 연결리스트로 연결
+    Node *head;
 }Bucket;
 
-Node* CreateNode(int key, char *value);
-int Hashing(int key);
-void Init(Bucket *hashtable);
-void Add(Bucket *hashtable, int key, char *value);
+void HashInit(Bucket *hashtable);
+int Hashing(char *value);
+void Insert(Bucket *hashtable, char *value);
 
-int Check(Bucket *hashtable, int key, char *value);
-void Qsort(char **result, int L, int R);
+int Check(Bucket *hashtable, char *value);
+
+void Swap(char **result, int idx1, int idx2);
+int Partition(char **result, int left, int right);
+void QuickSort(char **result, int left, int right);
 
 int main()
 {
-    char name[20];
-
-    Bucket hashtable[BUCKET_SIZE];
-    Init(hashtable);
+    Bucket *hashtable = (Bucket*)malloc(sizeof(Bucket)*BUCKET_SIZE);
+    HashInit(hashtable);
 
     int n, m;
     scanf("%d %d", &n, &m);
     for(int i = 0; i<n; i++)
     {
+        char name[21];
         scanf("%s", name);
-
-        Add(hashtable, name[0], name);
+        Insert(hashtable, name);
     }
-
-    char *result[Len];
+    
+    char **result;
+    result = (char**)malloc(sizeof(char*) * n);
     int num = 0;
 
     for(int i = 0; i<m; i++)
     {
+        char name[21];
         scanf("%s", name);
 
-        if(Check(hashtable, name[0], name))
+        if(Check(hashtable, name))
         {
-            result[num] = (char *)malloc(sizeof(char) * strlen(name));
+            result[num] = (char *)malloc(sizeof(char) * (strlen(name)+1));
             strcpy(result[num], name);
-            num +=1;
+            num += 1;
         }
-
     }
 
-    Qsort(result, 0, num-1);
+    QuickSort(result, 0, num-1);
     printf("%d\n", num);
     for(int i = 0; i<num; i++) printf("%s\n", result[i]);
-    
-}
-Node* CreateNode(int key, char *value)
-{
-    Node *newnode = (Node*)malloc(sizeof(Node));
-    newnode->key = key;
-    strcpy(newnode->value, value);
-    newnode->next = NULL;
 
-    return newnode;
+    return 0;
 }
 
-int Hashing(int key)
+void HashInit(Bucket *hashtable)
 {
-    return (key-97)%BUCKET_SIZE;
-}
-
-void Init(Bucket *hashtable)
-{
-    for(int i = 0; i<BUCKET_SIZE; i++) 
+    for(int i = 0; i<BUCKET_SIZE; i++)
         hashtable[i].head = NULL;
 }
 
-void Add(Bucket *hashtable, int key, char *value)
+int Hashing(char *value)
 {
-    int idx = Hashing(key);
-    Node *input = CreateNode(key,value);
-
-    if(hashtable[idx].head == 0)
+    unsigned long long result = 0;
+    for(int i = 0; i<strlen(value); i++)
     {
-        hashtable[idx].head = input;
+        unsigned long long pow = 1;
+        for(int j = 0; j<i; j++) 
+            pow *= 23;
+        result += value[i] * pow;
+    }
+
+    return result%BUCKET_SIZE;
+}
+
+void Insert(Bucket *hashtable, char *value)
+{
+    int idx = Hashing(value);
+
+    Node *newnode = (Node*)malloc(sizeof(Node));
+    strcpy(newnode->value, value);
+
+    if(hashtable[idx].head == NULL)
+    {
+        newnode->next = NULL;
+        hashtable[idx].head = newnode;
     }
     else
     {
-        Node *cur = hashtable[idx].head;
-        while(cur->next != NULL)
-            cur = cur->next;
-        
-        cur->next = CreateNode(key,value);
-
+        newnode->next = hashtable[idx].head;
+        hashtable[idx].head = newnode;
     }
 }
 
-int Check(Bucket *hashtable, int key, char *value)
+int Check(Bucket *hashtable, char *value)
 {
-    int idx = Hashing(key);
+    int idx = Hashing(value);
     if(hashtable[idx].head != NULL)
     {
         Node *cur = hashtable[idx].head;
@@ -114,40 +111,43 @@ int Check(Bucket *hashtable, int key, char *value)
         {
             if(strcmp(cur->value, value) == 0) return TRUE;
             cur = cur->next;
-        }
-    }
-
+        }       
+    } 
     return FALSE;
 }
 
-void Qsort(char **result, int L, int R)
+void Swap(char **result, int idx1, int idx2)
 {
-    int left = L, right = R;
-    char *pivot = result[(left+right)/2];
-    char *temp;
+    char *temp = result[idx1];
+    result[idx1] = result[idx2];
+    result[idx2] = temp;
+}
 
-    do
+int Partition(char **result, int left, int right)
+{
+    char *pivot = result[left];
+    int low = left+1;
+    int high = right;
+
+    while(low <= high)
     {
-        while(strcmp(result[left], pivot) < 0) 
-            left++;
+        while(strcmp(pivot, result[low]) > 0 && low<=right) low++;
 
-        while(strcmp(result[right], pivot) > 0) 
-            right--;
+        while(strcmp(pivot, result[high]) < 0 && high >= (left+1)) high--;
 
-        if(left<=right)
-        {
-            temp = result[left];
-            result[left] = result[right];
-            result[right] = temp;
+        if(low<=high) Swap(result, low, high);
+    }
 
-            left++;
-            right--;
-        }
-    }while(left<=right);
+    Swap(result, left, high);
+    return high;
+}
 
-    if(left < R)
-        Qsort(result, left, R);
-    
-    if(L < right)
-        Qsort(result, L, right);
+void QuickSort(char **result, int left, int right)
+{
+    if(left<=right)
+    {
+        int pivot = Partition(result, left, right);
+        QuickSort(result, left, pivot-1);
+        QuickSort(result, pivot+1, right);
+    }
 }
